@@ -1,0 +1,28 @@
+============================= test session starts =============================
+platform win32 -- Python 3.12.10, pytest-9.2.0, pluggy-1.7.0 -- C:\Users\Kristina\AppData\Local\Programs\Python\Python312-arm64\python.exe
+cachedir: .pytest_cache
+rootdir: C:\Users\Kristina\Workspace\language-of-computation\week4-assignment
+collecting ... collected 20 items
+
+test_ingest_agreed.py::test_example_1_valid_isbn10_loads_clean_isbn13_now_derived PASSED [  5%]
+test_ingest_agreed.py::test_example_2_leading_zero_repaired_isbn13_now_derived PASSED [ 10%]
+test_ingest_agreed.py::test_example_3_isbn13_float_derived_from_isbn10 PASSED [ 15%]
+test_ingest_agreed.py::test_example_4_isbn13_float_no_isbn10_warns PASSED [ 20%]
+test_ingest_agreed.py::test_example_5_letter_in_digit_position_invalid_characters PASSED [ 25%]
+test_ingest_agreed.py::test_example_6_wrong_check_digit_bad_checksum PASSED [ 30%]
+test_ingest_agreed.py::test_example_7_eleven_digits_wrong_length PASSED  [ 35%]
+test_ingest_agreed.py::test_example_8_isbn13_in_isbn_column_moved_and_isbn_rederived PASSED [ 40%]
+test_ingest_agreed.py::test_example_9_hyphenated_isbn10_repaired_isbn13_now_derived PASSED [ 45%]
+test_ingest_agreed.py::test_example_10_empty_isbn_now_loads_with_warning PASSED [ 50%]
+test_ingest_agreed.py::test_example_11_isbn13_bad_prefix_and_checksum_multi_code PASSED [ 55%]
+test_ingest_agreed.py::test_example_12_non_numeric_invalid_characters PASSED [ 60%]
+test_ingest_agreed.py::test_example_13_isbn_collision_keyed_on_goodreads_book_id PASSED [ 65%]
+test_ingest_agreed.py::test_example_14_hyphenated_isbn13_repaired_isbn_now_derived PASSED [ 70%]
+test_ingest_agreed.py::test_example_15_ratings_count_increase_updates_existing_row PASSED [ 75%]
+test_ingest_agreed.py::test_example_16_malformed_row_rejected PASSED     [ 80%]
+test_ingest_agreed.py::test_running_same_file_twice_creates_no_duplicates PASSED [ 85%]
+test_ingest_agreed.py::test_every_run_appends_a_log_entry_without_overwriting_earlier_ones PASSED [ 90%]
+test_ingest_agreed.py::test_loaded_updated_skipped_rejected_sum_to_rows_read PASSED [ 95%]
+test_ingest_agreed.py::test_same_file_on_empty_database_twice_gives_same_database PASSED [100%]
+
+============================= 20 passed in 0.36s ==============================

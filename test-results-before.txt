@@ -1,0 +1,221 @@
+============================= test session starts =============================
+platform win32 -- Python 3.12.10, pytest-9.2.0, pluggy-1.7.0 -- C:\Users\Kristina\AppData\Local\Programs\Python\Python312-arm64\python.exe
+cachedir: .pytest_cache
+rootdir: C:\Users\Kristina\Workspace\language-of-computation\week4-assignment
+collecting ... collected 20 items
+
+test_ingest_agreed.py::test_example_1_valid_isbn10_loads_clean_isbn13_now_derived FAILED [  5%]
+test_ingest_agreed.py::test_example_2_leading_zero_repaired_isbn13_now_derived FAILED [ 10%]
+test_ingest_agreed.py::test_example_3_isbn13_float_derived_from_isbn10 PASSED [ 15%]
+test_ingest_agreed.py::test_example_4_isbn13_float_no_isbn10_warns PASSED [ 20%]
+test_ingest_agreed.py::test_example_5_letter_in_digit_position_invalid_characters PASSED [ 25%]
+test_ingest_agreed.py::test_example_6_wrong_check_digit_bad_checksum PASSED [ 30%]
+test_ingest_agreed.py::test_example_7_eleven_digits_wrong_length PASSED  [ 35%]
+test_ingest_agreed.py::test_example_8_isbn13_in_isbn_column_moved_and_isbn_rederived FAILED [ 40%]
+test_ingest_agreed.py::test_example_9_hyphenated_isbn10_repaired_isbn13_now_derived FAILED [ 45%]
+test_ingest_agreed.py::test_example_10_empty_isbn_now_loads_with_warning FAILED [ 50%]
+test_ingest_agreed.py::test_example_11_isbn13_bad_prefix_and_checksum_multi_code FAILED [ 55%]
+test_ingest_agreed.py::test_example_12_non_numeric_invalid_characters PASSED [ 60%]
+test_ingest_agreed.py::test_example_13_isbn_collision_keyed_on_goodreads_book_id PASSED [ 65%]
+test_ingest_agreed.py::test_example_14_hyphenated_isbn13_repaired_isbn_now_derived FAILED [ 70%]
+test_ingest_agreed.py::test_example_15_ratings_count_increase_updates_existing_row PASSED [ 75%]
+test_ingest_agreed.py::test_example_16_malformed_row_rejected PASSED     [ 80%]
+test_ingest_agreed.py::test_running_same_file_twice_creates_no_duplicates FAILED [ 85%]
+test_ingest_agreed.py::test_every_run_appends_a_log_entry_without_overwriting_earlier_ones PASSED [ 90%]
+test_ingest_agreed.py::test_loaded_updated_skipped_rejected_sum_to_rows_read PASSED [ 95%]
+test_ingest_agreed.py::test_same_file_on_empty_database_twice_gives_same_database PASSED [100%]
+
+================================== FAILURES ===================================
+_________ test_example_1_valid_isbn10_loads_clean_isbn13_now_derived __________
+
+workdir = {'db': WindowsPath('C:/Users/Kristina/AppData/Local/Temp/pytest-of-Kristina/pytest-6/test_example_1_valid_isbn10_lo0/t...sers/Kristina/AppData/Local/Temp/pytest-of-Kristina/pytest-6/test_example_1_valid_isbn10_lo0/ingestion-log.json'), ...}
+
+    def test_example_1_valid_isbn10_loads_clean_isbn13_now_derived(workdir):
+        """#1 `0439023483`: still loads clean, no warning. New under the
+        agreed rules: isbn13 is now derived too, since it's blank and isbn is
+        valid (the collision check needs isbn13 populated whenever any valid
+        ISBN exists -- see rules-agreed.md section 1's "isbn13 is simply
+        blank" row)."""
+        conn, book = run_single_row(workdir, default_row(
+            goodreads_book_id="ag1", isbn="0439023483", isbn13="",
+        ))
+        assert book["isbn"] == "0439023483"
+>       assert book["isbn13"] == "9780439023481"
+E       AssertionError: assert '' == '9780439023481'
+E         
+E         - 9780439023481
+
+test_ingest_agreed.py:183: AssertionError
+---------------------------- Captured stdout call -----------------------------
+rows_read=1 loaded=1 updated=0 skipped=0 rejected=0
+___________ test_example_2_leading_zero_repaired_isbn13_now_derived ___________
+
+workdir = {'db': WindowsPath('C:/Users/Kristina/AppData/Local/Temp/pytest-of-Kristina/pytest-6/test_example_2_leading_zero_re0/t...sers/Kristina/AppData/Local/Temp/pytest-of-Kristina/pytest-6/test_example_2_leading_zero_re0/ingestion-log.json'), ...}
+
+    def test_example_2_leading_zero_repaired_isbn13_now_derived(workdir):
+        """#2 `439023483` (9 digits): still zero-pads to `0439023483`. New:
+        isbn13 is now also derived from it."""
+        conn, book = run_single_row(workdir, default_row(
+            goodreads_book_id="ag2", isbn="439023483", isbn13="",
+        ))
+        assert book["isbn"] == "0439023483"
+>       assert book["isbn13"] == "9780439023481"
+E       AssertionError: assert '' == '9780439023481'
+E         
+E         - 9780439023481
+
+test_ingest_agreed.py:194: AssertionError
+---------------------------- Captured stdout call -----------------------------
+rows_read=1 loaded=1 updated=0 skipped=0 rejected=0
+________ test_example_8_isbn13_in_isbn_column_moved_and_isbn_rederived ________
+
+workdir = {'db': WindowsPath('C:/Users/Kristina/AppData/Local/Temp/pytest-of-Kristina/pytest-6/test_example_8_isbn13_in_isbn_0/t...sers/Kristina/AppData/Local/Temp/pytest-of-Kristina/pytest-6/test_example_8_isbn13_in_isbn_0/ingestion-log.json'), ...}
+
+    def test_example_8_isbn13_in_isbn_column_moved_and_isbn_rederived(workdir):
+        """#8 `9781982147600` found in the `isbn` column: still moves to
+        `isbn13`, `isbn` nulled by the move. New under the agreed rules:
+        Anthony's reverse derivation then fills `isbn` back in from that
+        valid 978-prefixed `isbn13` (computed as `1982147601` by the real
+        isbn10_check_digit function, not hand-derived) -- so `isbn` ends up
+        populated again, not left blank."""
+        conn, book = run_single_row(workdir, default_row(
+            goodreads_book_id="ag8", isbn="9781982147600", isbn13="",
+        ))
+        assert book["isbn13"] == "9781982147600"
+>       assert book["isbn"] == "1982147601"
+E       AssertionError: assert '' == '1982147601'
+E         
+E         - 1982147601
+
+test_ingest_agreed.py:275: AssertionError
+---------------------------- Captured stdout call -----------------------------
+rows_read=1 loaded=1 updated=0 skipped=0 rejected=0
+________ test_example_9_hyphenated_isbn10_repaired_isbn13_now_derived _________
+
+workdir = {'db': WindowsPath('C:/Users/Kristina/AppData/Local/Temp/pytest-of-Kristina/pytest-6/test_example_9_hyphenated_isbn0/t...sers/Kristina/AppData/Local/Temp/pytest-of-Kristina/pytest-6/test_example_9_hyphenated_isbn0/ingestion-log.json'), ...}
+
+    def test_example_9_hyphenated_isbn10_repaired_isbn13_now_derived(workdir):
+        """#9 `0-450-19827-8`: still strips to `0450198278`. New: `isbn13` is
+        now also derived from it."""
+        conn, book = run_single_row(workdir, default_row(
+            goodreads_book_id="ag9", isbn="0-450-19827-8", isbn13="",
+        ))
+        assert book["isbn"] == "0450198278"
+>       assert book["isbn13"] == "9780450198274"
+E       AssertionError: assert '' == '9780450198274'
+E         
+E         - 9780450198274
+
+test_ingest_agreed.py:286: AssertionError
+---------------------------- Captured stdout call -----------------------------
+rows_read=1 loaded=1 updated=0 skipped=0 rejected=0
+______________ test_example_10_empty_isbn_now_loads_with_warning ______________
+
+workdir = {'db': WindowsPath('C:/Users/Kristina/AppData/Local/Temp/pytest-of-Kristina/pytest-6/test_example_10_empty_isbn_now0/t...sers/Kristina/AppData/Local/Temp/pytest-of-Kristina/pytest-6/test_example_10_empty_isbn_now0/ingestion-log.json'), ...}
+
+    def test_example_10_empty_isbn_now_loads_with_warning(workdir):
+        """#10 `` (empty): CHANGED under Decision 3 -- the original rules.md
+        loaded this informationally, with no warning at all; rules-agreed.md
+        adopts Abigail's model instead: loaded, but with a `no-usable-isbn`
+        warning."""
+        conn, book = run_single_row(workdir, default_row(
+            goodreads_book_id="ag10", isbn="", isbn13="",
+        ))
+        assert book is not None
+        assert book["isbn"] == "" and book["isbn13"] == ""
+        warnings = get_warnings_for(conn, book["id"])
+>       assert len(warnings) == 1
+E       assert 0 == 1
+E        +  where 0 = len([])
+
+test_ingest_agreed.py:301: AssertionError
+---------------------------- Captured stdout call -----------------------------
+rows_read=1 loaded=1 updated=0 skipped=0 rejected=0
+__________ test_example_11_isbn13_bad_prefix_and_checksum_multi_code __________
+
+workdir = {'db': WindowsPath('C:/Users/Kristina/AppData/Local/Temp/pytest-of-Kristina/pytest-6/test_example_11_isbn13_bad_pre0/t...sers/Kristina/AppData/Local/Temp/pytest-of-Kristina/pytest-6/test_example_11_isbn13_bad_pre0/ingestion-log.json'), ...}
+
+    def test_example_11_isbn13_bad_prefix_and_checksum_multi_code(workdir):
+        """#11 `9999999999999`: CHANGED under the agreed rules -- the prefix
+        check (Open item: implement) means this now fails on *two* grounds at
+        once (no 978/979 prefix, and a failing Mod-10 checksum), reported as
+        one comma-separated reason per Anthony's multi-code reporting (Open
+        item: implement), rather than just `bad-checksum`."""
+        conn, book = run_single_row(workdir, default_row(
+            goodreads_book_id="ag11", isbn="", isbn13="9999999999999",
+        ))
+        assert book["isbn13"] == ""
+        warnings = get_warnings_for(conn, book["id"])
+        assert len(warnings) == 1
+        assert warnings[0]["field"] == "isbn13"
+>       assert warnings[0]["reason"] == "bad-prefix,bad-checksum"
+E       AssertionError: assert 'bad-checksum' == 'bad-prefix,bad-checksum'
+E         
+E         - bad-prefix,bad-checksum
+E         + bad-checksum
+
+test_ingest_agreed.py:319: AssertionError
+---------------------------- Captured stdout call -----------------------------
+rows_read=1 loaded=1 updated=0 skipped=0 rejected=0
+_________ test_example_14_hyphenated_isbn13_repaired_isbn_now_derived _________
+
+workdir = {'db': WindowsPath('C:/Users/Kristina/AppData/Local/Temp/pytest-of-Kristina/pytest-6/test_example_14_hyphenated_isb0/t...sers/Kristina/AppData/Local/Temp/pytest-of-Kristina/pytest-6/test_example_14_hyphenated_isb0/ingestion-log.json'), ...}
+
+    def test_example_14_hyphenated_isbn13_repaired_isbn_now_derived(workdir):
+        """#14 `978-0-13-468599-1` (made up): still strips to
+        `9780134685991`. New: `isbn` is now also reverse-derived from it,
+        instead of staying blank."""
+        conn, book = run_single_row(workdir, default_row(
+            goodreads_book_id="ag14", isbn="", isbn13="978-0-13-468599-1",
+        ))
+        assert book["isbn13"] == "9780134685991"
+>       assert book["isbn"] == "0134685997"
+E       AssertionError: assert '' == '0134685997'
+E         
+E         - 0134685997
+
+test_ingest_agreed.py:377: AssertionError
+---------------------------- Captured stdout call -----------------------------
+rows_read=1 loaded=1 updated=0 skipped=0 rejected=0
+_____________ test_running_same_file_twice_creates_no_duplicates ______________
+
+workdir = {'db': WindowsPath('C:/Users/Kristina/AppData/Local/Temp/pytest-of-Kristina/pytest-6/test_running_same_file_twice_c0/t...sers/Kristina/AppData/Local/Temp/pytest-of-Kristina/pytest-6/test_running_same_file_twice_c0/ingestion-log.json'), ...}
+
+    def test_running_same_file_twice_creates_no_duplicates(workdir):
+        """rules-agreed.md section 2/3: identity is `goodreads_book_id`, which
+        every row has -- running the same file again must not create a second
+        row for a book that already has one. Unlike the original rules.md
+        (where only ISBN-bearing rows deduplicated), this now holds even for a
+        row with no usable ISBN at all, so one row of each kind is used here."""
+        rows = [
+            default_row(goodreads_book_id="dup1", isbn="0439023483", isbn13=""),
+            default_row(goodreads_book_id="dup2", isbn="", isbn13=""),  # no ISBN at all
+        ]
+        write_csv(workdir["csv"], rows)
+    
+        ingest.run(str(workdir["csv"]), str(workdir["db"]), str(workdir["log"]))
+        conn = connect(workdir)
+        count_after_first = conn.execute("SELECT COUNT(*) FROM books").fetchone()[0]
+    
+        ingest.run(str(workdir["csv"]), str(workdir["db"]), str(workdir["log"]))
+        conn2 = connect(workdir)
+        count_after_second = conn2.execute("SELECT COUNT(*) FROM books").fetchone()[0]
+    
+        assert count_after_first == 2
+>       assert count_after_second == 2
+E       assert 3 == 2
+
+test_ingest_agreed.py:454: AssertionError
+---------------------------- Captured stdout call -----------------------------
+rows_read=2 loaded=2 updated=0 skipped=0 rejected=0
+rows_read=2 loaded=1 updated=0 skipped=1 rejected=0
+=========================== short test summary info ===========================
+FAILED test_ingest_agreed.py::test_example_1_valid_isbn10_loads_clean_isbn13_now_derived
+FAILED test_ingest_agreed.py::test_example_2_leading_zero_repaired_isbn13_now_derived
+FAILED test_ingest_agreed.py::test_example_8_isbn13_in_isbn_column_moved_and_isbn_rederived
+FAILED test_ingest_agreed.py::test_example_9_hyphenated_isbn10_repaired_isbn13_now_derived
+FAILED test_ingest_agreed.py::test_example_10_empty_isbn_now_loads_with_warning
+FAILED test_ingest_agreed.py::test_example_11_isbn13_bad_prefix_and_checksum_multi_code
+FAILED test_ingest_agreed.py::test_example_14_hyphenated_isbn13_repaired_isbn_now_derived
+FAILED test_ingest_agreed.py::test_running_same_file_twice_creates_no_duplicates
+======================== 8 failed, 12 passed in 0.46s =========================
