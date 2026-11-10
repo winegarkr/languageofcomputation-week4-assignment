@@ -126,7 +126,14 @@ def derive_isbn10_from_isbn13(isbn13_value):
 
 
 def strip_separators(s):
-    return re.sub(r"[-\s]", "", s)
+    """Strip hyphens/spaces, and uppercase a lowercase trailing check digit
+    ('x' -> 'X') so the same ISBN-10 value doesn't come out differently
+    cased depending on how it was typed. rules.md doesn't say this
+    explicitly, but Anthony's and Abigail's implementations both do it,
+    so this aligns Kristina's outcomes with theirs (comparison.md,
+    "Why our data differs" #1)."""
+    s = re.sub(r"[-\s]", "", s)
+    return s[:-1] + "X" if s.endswith("x") else s
 
 
 def looks_like_float_artifact(raw):
@@ -194,8 +201,12 @@ def fix_isbn(raw):
                     "note": f"zero-padded from {len(stripped)} to 10 digits, then check digit "
                             f"recalculated via stripped-978 repair",
                     "warning": None, "warning_raw": None, "moved_isbn13": None}
+        # The value pads to the right length but still fails the checksum --
+        # treated as a bad checksum (the padded 10-digit candidate is what
+        # failed), not a length problem, matching Anthony's and Abigail's
+        # implementations (comparison.md, "Why our data differs" #2).
         return {"value": "", "repaired": False, "note": None,
-                "warning": "wrong-length", "warning_raw": s, "moved_isbn13": None}
+                "warning": "bad-checksum", "warning_raw": s, "moved_isbn13": None}
 
     # All-digit but the wrong length in some other way (too long, or 13 digits
     # that don't check out as ISBN-13 either).

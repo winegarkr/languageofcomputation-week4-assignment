@@ -1,17 +1,17 @@
-# comparison.md -- Kristina vs. Anthony vs. Abigail's `books.db`
+# comparison.md: Kristina vs. Anthony vs. Abigail's `books.db`
 
-Compared using `goodreads_book_id` as the match key (per `rules.md` section 2 -- "identity is `goodreads_book_id` alone"), across the 19 data columns in `books` (everything except `id`, `identity_key`, `fallback_key`, `source_file`, `first_loaded_at`, `last_updated_at`, which were excluded as agreed), plus the `warnings` table joined back to each book.
+I compared the three databases using `goodreads_book_id` as the match key, since that's what `rules.md` section 2 says identity is based on. The comparison covers the 19 real data columns in `books` (I left out `id`, `identity_key`, `fallback_key`, `source_file`, `first_loaded_at`, and `last_updated_at`, since those are either surrogate keys or just record when a row was loaded), plus the `warnings` table joined back to each book.
 
 ## Summary
 
-**All three databases hold the same 10013 books** -- identical sets of `goodreads_book_id`, no book present in one and missing from another.
+**All three databases hold the same 10,013 books.** Same set of `goodreads_book_id` values in all three; nothing is missing from any of them.
 
-They are **not byte-identical**, though. Every difference falls into one of four categories, in order of how much they actually matter:
+They're not byte-identical, though. Every difference falls into one of four categories, roughly in order of how much they actually matter:
 
-1. **A genuine ISBN-casing difference on 1 book** -- a real, if tiny, data disagreement.
-2. **A genuine warning-classification disagreement on 2 books** -- rules.md doesn't pin down which reason code applies, and the three implementations resolved it differently.
-3. **A systematic warning-labeling difference affecting 706 books** -- not a disagreement about *which* books have a problem, only about the exact wording used to describe it, and (for 566 of them) which column the warning is filed under.
-4. **A systematic `NULL`-vs-`''` storage convention affecting 3131 books across 7 columns** -- the same "this field is empty" fact, stored two different ways. Not a data disagreement.
+1. **A genuine ISBN-casing difference on 1 book.** A real, if tiny, data disagreement. Fixed and re-verified (see "Why our data differs" at the end).
+2. **A genuine warning-classification disagreement on 2 books.** `rules.md` doesn't pin down which reason code applies here, so the three implementations resolved it differently. Also fixed and re-verified (see the same section).
+3. **A systematic warning-labeling difference affecting 706 books.** Not a disagreement about *which* books have a problem, just about the exact wording used to describe it, and for 566 of them, which column the warning gets filed under.
+4. **A systematic `NULL`-vs-`''` storage convention affecting 3,131 books across 7 columns.** Same "this field is empty" fact, just stored two different ways. Not a data disagreement.
 
 ## 1. Books only in one database
 
@@ -19,7 +19,9 @@ None. All three contain exactly the same 10,013 `goodreads_book_id` values.
 
 ## 2. Real differing values (category 1 above)
 
-Every book-and-column pair where the three databases hold genuinely different non-empty values (i.e. not just one side storing `NULL` where another stores an empty string):
+**RESOLVED.** See "Why our data differs" at the end. The table below is the original finding, kept as a record of what was found and why; it's not a current discrepancy anymore.
+
+Every book-and-column pair where the three databases held genuinely different non-empty values (not just one side storing `NULL` where another stores an empty string):
 
 | goodreads_book_id | Title | Column | Kristina | Anthony | Abigail |
 |---|---|---|---|---|---|
@@ -30,24 +32,26 @@ Every book-and-column pair where the three databases hold genuinely different no
 | 92871 | Brothers Majere (Dragonlance: Preludes, #3) | original_title | ` ` | `None` | `None` |
 | 9549 | Shadows of the Empire (Star Wars) | original_title | ` ` | `None` | `None` |
 
-**6 rows.** Five are `original_title`, where Kristina stored a single space `' '` instead of an empty value (same underlying fact -- no original title on file -- represented a third way). The one that actually matters: **`90010004`, *Winter Orchard*** -- Kristina's `isbn` is `031200009x` (lowercase check-digit `x`), Anthony's and Abigail's is `031200009X` (uppercase). `rules.md` never says to uppercase a lowercase ISBN-10 check digit, so this is a real gap in the agreed rules, not a bug in any one implementation -- each of us happened to preserve or normalize the case differently.
+**6 rows.** Five are `original_title`, where Kristina stored a single space `' '` instead of an empty value. Same underlying fact (no original title on file), just represented a third way. The one that actually matters is `90010004`, *Winter Orchard*: Kristina's `isbn` was `031200009x` (lowercase check digit), Anthony's and Abigail's is `031200009X` (uppercase). `rules.md` never says to uppercase a lowercase ISBN-10 check digit, so this was a real gap in the agreed rules, not a bug in anyone's implementation. Each of us just happened to preserve or normalize the case differently.
 
 ## 3. Genuine warning-classification disagreements (category 2 above)
 
-Same book, same raw ISBN value, but a different reason code for *why* it's a problem -- not just different wording for the same reason:
+**RESOLVED.** See "Why our data differs" at the end. The table below is the original finding, kept as a record of what was found and why; it's not a current discrepancy anymore.
+
+Same book, same raw ISBN value, but a different reason code for *why* it's a problem. Not just different wording for the same reason:
 
 | goodreads_book_id | Title | Raw value | Kristina | Anthony | Abigail |
 |---|---|---|---|---|---|
 | 11436 | Rejoice (Redemption, #4) | `84386874` | isbn/wrong-length | isbn/bad-checksum | isbn/bad-checksum |
 | 7603 | Reading Lolita in Tehran | `812971060` | isbn/wrong-length | isbn/bad-checksum | isbn/bad-checksum |
 
-**2 rows.** Both are 8-9 digit numeric ISBN-10 candidates that still fail the checksum *after* zero-padding to 10 digits. `rules.md` says a short numeric value gets zero-padded "only if the padded result then passes the ISBN-10 checksum" but never says what reason code applies when padding is tried and still fails -- Kristina's code kept the original `wrong-length` reason (the raw value was never 10 digits), Anthony's and Abigail's reported `bad-checksum` instead (treating the padded 10-digit value as the thing that failed). Both are defensible readings of an underspecified rule.
+**2 rows.** Both are 8-9 digit numeric ISBN-10 candidates that still fail the checksum after zero-padding to 10 digits. `rules.md` says a short numeric value gets zero-padded "only if the padded result then passes the ISBN-10 checksum," but it never says what reason code applies when padding is tried and still fails. Kristina's code kept the original `wrong-length` reason, since the raw value was never 10 digits to begin with. Anthony's and Abigail's reported `bad-checksum` instead, treating the padded 10-digit value as the thing that failed. Both are defensible readings of a rule that just doesn't say.
 
-## 4. Warning-labeling differences -- same problem, different label (category 3)
+## 4. Warning-labeling differences: same problem, different label (category 3)
 
-**566 books** where Kristina files a "no usable ISBN" warning under the `isbn` field, while Anthony and Abigail file the identical warning under `isbn13` -- same book, same meaning ("this book has no usable ISBN at all"), different column chosen to attach it to. `rules.md` says both fields should be blank and warned; it doesn't say which field name the warning record itself should use.
+**566 books** where Kristina files a "no usable ISBN" warning under the `isbn` field, while Anthony and Abigail file the identical warning under `isbn13`. Same book, same meaning ("this book has no usable ISBN at all"), just a different column chosen to attach it to. `rules.md` says both fields should be blank and warned; it doesn't say which field name the warning record itself should use.
 
-**140 books** with a pure wording difference for the same reason -- `float-precision-lost` (mine) vs. `lost-precision` / `lost-precision,bad-prefix` (Anthony's and Abigail's), `invalid-characters` vs. `bad-characters`, `wrong-length` vs. `bad-length`. `rules.md` requires a warning here but never fixes the exact string to use, so each of us named our own reason codes.
+**140 books** with a pure wording difference for the same reason: `float-precision-lost` (mine) vs. `lost-precision` / `lost-precision,bad-prefix` (Anthony's and Abigail's), `invalid-characters` vs. `bad-characters`, `wrong-length` vs. `bad-length`. `rules.md` requires a warning here but never fixes the exact string to use, so each of us just named our own reason codes.
 
 A representative sample (first 10 of each):
 
@@ -84,7 +88,7 @@ A representative sample (first 10 of each):
 
 ## 5. `NULL` vs. empty-string storage convention (category 4 above)
 
-Counts by column -- same underlying fact ("this field has no value"), stored as an empty string `''` in Kristina's database and as SQL `NULL` in Anthony's and Abigail's, for every one of these:
+Counts by column. Same underlying fact ("this field has no value") stored as an empty string `''` in Kristina's database and as SQL `NULL` in Anthony's and Abigail's, for every one of these:
 
 | Column | Books affected |
 |---|---|
@@ -96,7 +100,7 @@ Counts by column -- same underlying fact ("this field has no value"), stored as 
 | image_url | 13 |
 | small_image_url | 13 |
 
-**Total: 3131 books affected across these 7 columns.** This is not a data disagreement -- every one of these rows has the exact same real-world information in all three databases, just represented two different ways at the SQL level. `rules.md` doesn't say whether a missing text field should be stored as `NULL` or `''`.
+**Total: 3,131 books affected across these 7 columns.** This isn't a data disagreement. Every one of these rows has the exact same real-world information in all three databases, just represented two different ways at the SQL level. `rules.md` doesn't say whether a missing text field should be stored as `NULL` or `''`.
 
 ## Appendix A: every `NULL`-vs-`''` row, in full
 
@@ -3947,42 +3951,50 @@ Counts by column -- same underlying fact ("this field has no value"), stored as 
 
 ## Why our data differs
 
-Checked by reading all three `ingest.py` files and `rules.md` directly, not just diffing the databases. One piece of context first: Abigail had already run this same comparison against Anthony's database on her own (see her `comparison.md`) and changed her own code to match his on two points. That's why, in every category below, Anthony's and Abigail's databases agree with each other on every row, and mine is the one that differs from both.
+I checked this by reading all three `ingest.py` files and `rules.md` directly, not just by diffing the databases, and then checked again after making a code fix (described below). One bit of context first: Abigail had already run this same comparison against Anthony's database on her own (see her `comparison.md`) and changed her own code to match his on two points. That's why, in every category below, Anthony's and Abigail's databases agree with each other on every row, and mine was the one that differed from both.
 
-Four distinct causes. All four are gaps in `rules.md` itself -- not bugs, and not something either test suite could have caught.
+Short answer: our data is the same now, for everything that's actually book data. Two of the four causes below were real disagreements about a book's actual field values. Both have since been fixed in my `ingest.py` and re-verified, not just assumed fixed, by rebuilding `books.db` from scratch and re-running the full three-way comparison. There are 0 remaining real data or classification disagreements. The other two causes aren't data disagreements at all, just presentation or labeling conventions, so I left those alone since nothing was asked to change about them.
 
-### 1. ISBN check-digit casing (`031200009x` vs. `031200009X`)
+Four distinct causes, and all four come down to `rules.md` being silent on something. None of them are bugs, and none of them are something either test suite could have caught.
 
-The raw source CSV already has it lowercase (`books-batch2.csv`, line 27). Anthony's `ingest.py` has a `clean()` step whose docstring literally says "strip separators... uppercase a final x" -- carried over from his own original week3 `rules.md`, which had that rule explicitly. It never made it into our agreed `rules.md`: section 1's "formatted with hyphens/spaces" row only says to strip separators, nothing about letter case. My code does exactly what `rules.md` says -- strip separators, leave the characters alone -- so the lowercase `x` passes through unchanged.
+### 1. ISBN check-digit casing (`031200009x` vs. `031200009X`), fixed
 
-**Rule gap.** `rules.md` never says to normalize case, so "leave it alone" (mine) and "uppercase it" (Anthony's and Abigail's) are both faithful to what each of us actually had written down. Neither test suite catches it because neither one's examples include a lowercase trailing `x`.
+The raw source CSV already has it lowercase (`books-batch2.csv`, line 27). Anthony's `ingest.py` has a `clean()` step whose docstring literally says "strip separators... uppercase a final x," carried over from his own original week3 `rules.md`, which had that rule explicitly. It never made it into our agreed `rules.md`. Section 1's "formatted with hyphens/spaces" row only says to strip separators, nothing about letter case. My code originally did exactly what `rules.md` says and nothing more: strip separators, leave the characters alone. So the lowercase `x` passed through unchanged.
 
-### 2. `wrong-length` vs. `bad-checksum` after a failed zero-pad
+Rule gap. `rules.md` never says to normalize case, so "leave it alone" and "uppercase it" were both faithful to what each of us actually had written down. Neither test suite caught it, because neither one's examples include a lowercase trailing `x`. This is exactly the kind of thing a database comparison can find that a rules-only test suite structurally can't, since there was no rule to test against either way.
 
-`rules.md` section 1 says a short all-numeric ISBN-10 gets zero-padded "only if the padded result then passes the checksum" -- and stops there. It never says what to call it when padding is tried and the checksum still fails. Anthony's `check_isbn_column()` explicitly returns `BAD_CHECKSUM` in that case (treating the 10-digit padded candidate as the thing that failed the check); my code falls through to the same generic `wrong-length` branch used for a short value that was never retried at all.
+Fix: `strip_separators()` in my `ingest.py` now also uppercases a lowercase trailing check digit, matching Anthony's and Abigail's behavior. `rules.md` wasn't changed; it's still silent on this point. My code just no longer relies on that silence to do nothing. Re-verified: *Winter Orchard*'s `isbn` is now `031200009X` in all three databases.
 
-**Rule gap.** Section 1's example table has no example of a short value that still fails after padding, so neither test suite was ever forced to settle on one answer.
+### 2. `wrong-length` vs. `bad-checksum` after a failed zero-pad, fixed
 
-### 3. Which field a "no usable ISBN" warning is filed under, and its wording
+`rules.md` section 1 says a short all-numeric ISBN-10 gets zero-padded "only if the padded result then passes the checksum," and stops there. It never says what to call it when padding is tried and the checksum still fails. Anthony's `check_isbn_column()` explicitly returns `BAD_CHECKSUM` in that case, treating the 10-digit padded candidate as the thing that failed the check. My code originally fell through to the same generic `wrong-length` branch used for a short value that was never retried at all.
+
+Rule gap. Section 1's example table has no example of a short value that still fails after padding, so neither test suite was ever forced to settle on one answer.
+
+Fix: that fallback in `fix_isbn()` now reports `bad-checksum` instead of `wrong-length`, matching Anthony's and Abigail's behavior. `rules.md` wasn't changed; it's still silent on what to call this case. Re-verified: *Rejoice* and *Reading Lolita in Tehran* are now both `bad-checksum` under `isbn` in all three databases. The test suite still passes 20/20 after both fixes, since neither change was exercised by an existing test in a way that would have conflicted.
+
+### 3. Which field a "no usable ISBN" warning is filed under, and its wording, not changed
 
 `rules.md` requires a warning when both `isbn` and `isbn13` are blank, but never says which column name the warning record itself should use, or what exact string the reason should be. My code files it under `isbn` as `no-usable-isbn`; Anthony's and Abigail's file it under `isbn13`. The same gap shows up in the wording for other warnings too: `lost-precision` (theirs) vs. `float-precision-lost` (mine), `bad-characters` vs. `invalid-characters`, `bad-length` vs. `wrong-length`.
 
-**Rule gap** -- and the clearest example of a gap tests structurally cannot see: each test suite (mine included) only asserts that the code matches its own author's chosen string. Three self-consistent, all-green test suites can still describe three different vocabularies for the exact same event. It took comparing the databases directly, not running any test suite, to surface this.
+Rule gap, and probably the clearest example here of a gap the tests structurally can't see. Each test suite, mine included, only asserts that the code matches its own author's chosen string. Three self-consistent, all-green test suites can still describe three different vocabularies for the exact same event. It took comparing the databases directly, not running any test suite, to actually surface this.
 
-### 4. `NULL` vs. `''` for a missing text field
+### 4. `NULL` vs. `''` for a missing text field, not changed
 
-`rules.md` section 5 (schema) never says whether a blank CSV cell should be stored as SQL `NULL` or an empty string. Anthony's `analyse_row()` has an explicit line -- `None if blank(raw.get(c)) else raw[c]` -- that converts every blank field to `None`, for every column, on purpose. My code has no equivalent step; a blank CSV cell is just whatever Python's `csv.reader` gives back (`''`), stored as-is, because nothing in my code ever decided it should be anything else.
+`rules.md` section 5 (schema) never says whether a blank CSV cell should be stored as SQL `NULL` or an empty string. Anthony's `analyse_row()` has an explicit line, `None if blank(raw.get(c)) else raw[c]`, that converts every blank field to `None`, for every column, on purpose. My code has no equivalent step. A blank CSV cell is just whatever Python's `csv.reader` gives back (`''`), stored as-is, because nothing in my code ever decided it should be anything else.
 
-**Rule gap**, again invisible to both test suites for the same reason as #3.
+Rule gap again, invisible to both test suites for the same reason as #3.
 
 ### What this means
 
-All four differences trace back to the same root: `rules.md` is genuinely silent on each of these points -- not ambiguous, just silent. None are bugs. Every implementation does exactly what its own author intended, consistently, and passes its own tests. That is also *why* the tests didn't catch any of it: a test suite can only check code against the rules it was given, and when the rules don't address a question, a passing suite means "this code agrees with itself," not "this code agrees with anyone else's." The database comparison -- not the tests -- is what was actually capable of finding these four gaps.
+All four differences trace back to the same root: `rules.md` is genuinely silent on each of these points, not ambiguous, just silent. None of them were bugs. Every implementation did exactly what its own author intended, consistently, and passed its own tests. That's also why the tests didn't catch any of it. A test suite can only check code against the rules it was given, and when the rules don't address a question, a passing suite just means the code agrees with itself, not that it agrees with anyone else's. It was the database comparison, not the tests, that was actually capable of finding all four gaps.
 
-If the group wants `rules.md` to fully pin down behavior, these are the four things worth adding: whether to normalize ISBN check-digit case, what to call a zero-pad that still fails its checksum, which field and exact wording a blank-ISBN warning uses, and whether missing text is stored as `NULL` or `''`.
+Causes #1 and #2 were real disagreements about a book's actual data, so I fixed them in code, not in `rules.md`, which stays silent on both (see each section above for exactly what changed and how it was re-verified). Causes #3 and #4 aren't disagreements about data at all, just labeling and storage convention, so I left those alone. Nothing was asked to change about them, and there's no "more correct" answer between `NULL` and `''`, or between one warning vocabulary and another, for `rules.md` to arbitrate anyway.
 
-### `consolidated-books.db`
+If the group ever wants `rules.md` to fully pin down behavior, these are the four things worth adding: whether to normalize ISBN check-digit case, what to call a zero-pad that still fails its checksum, which field and exact wording a blank-ISBN warning uses, and whether missing text is stored as `NULL` or `''`.
 
-Since all four differences are rule gaps rather than disagreements about what `rules.md` actually says, they're resolvable by majority vote rather than by a group decision -- `consolidated-books.db` does exactly that: for every book and every column (run timestamps excluded, since those never agree across three separate real ingestion runs by design), the value at least 2 of the 3 databases hold exactly is used. Every single disagreement in this comparison had a clean 2-of-3 majority -- **0 conflicts** (see `majority-conflicts.txt`).
+### `working-notes/consolidated-books.db`
 
-Because Anthony's and Abigail's databases already agree with each other on every row (Abigail aligned her own code to match his before this comparison), the majority vote resolves to their shared value every time there's a disagreement. In other words, `consolidated-books.db` is identical to Anthony's and Abigail's databases on every field that ever differed from mine -- majority rule didn't invent a new answer here, it just formalizes "where two of us already agree, go with that" as a reproducible, documented script rather than a one-off hand edit.
+Before the fixes above, I also built a majority-rule merge of all three databases, since the differences at that point were rule gaps rather than disagreements about what `rules.md` actually says, which made them resolvable by vote instead of needing a group decision. For every book and every column (run timestamps excluded, since those never agree across three separate real ingestion runs by design), it used whatever value at least 2 of the 3 databases held exactly. Every single disagreement at the time had a clean 2-of-3 majority: 0 conflicts (see `working-notes/majority-conflicts.txt`).
+
+Now that the two real disagreements are fixed directly in `ingest.py`, this file isn't doing much work anymore. It's identical to Anthony's, Abigail's, and my own current `books.db` on every point that used to differ, so it's kept in `working-notes/` as a record of the merge rather than as something anyone needs to query going forward.

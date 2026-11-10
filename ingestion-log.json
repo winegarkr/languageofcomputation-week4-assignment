@@ -1,6 +1,6 @@
 [
   {
-    "run_at": "2026-11-09T01:38:28Z",
+    "run_at": "2026-11-10T19:41:34Z",
     "source_file": "books.csv",
     "status": "COMPLETED WITH ISSUES",
     "fatal_error": null,
@@ -14,7 +14,7 @@
     "updates": []
   },
   {
-    "run_at": "2026-11-09T01:38:35Z",
+    "run_at": "2026-11-10T19:41:41Z",
     "source_file": "books.csv",
     "status": "COMPLETED WITH ISSUES",
     "fatal_error": null,
@@ -70029,7 +70029,7 @@
     "updates": []
   },
   {
-    "run_at": "2026-11-09T01:39:04Z",
+    "run_at": "2026-11-10T19:42:10Z",
     "source_file": "books-batch2.csv",
     "status": "COMPLETED WITH ISSUES",
     "fatal_error": null,

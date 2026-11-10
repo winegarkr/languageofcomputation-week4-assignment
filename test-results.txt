@@ -26,4 +26,4 @@ test_ingest.py::test_every_run_appends_a_log_entry_without_overwriting_earlier_o
 test_ingest.py::test_loaded_updated_skipped_rejected_sum_to_rows_read PASSED [ 95%]
 test_ingest.py::test_same_file_on_empty_database_twice_gives_same_database PASSED [100%]
 
-============================= 20 passed in 0.31s ==============================
+============================= 20 passed in 0.40s ==============================
