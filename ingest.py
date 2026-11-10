@@ -1,7 +1,6 @@
 """
-Ingest a books CSV into books.db, following week4-assignment/rules-final.md
-exactly (the group's merged rules, agreed 2026-11-06 -- see that file for
-the decision each rule below traces back to).
+Ingest a books CSV into books.db, following rules.md exactly -- the rules
+Kristina and her partner agreed on.
 
 No AI, no network access: every decision below is pure, deterministic logic
 (ISBN checksum math and plain string rules), so the same input file always
@@ -30,7 +29,7 @@ EXPECTED_HEADER = [
     "image_url", "small_image_url",
 ]
 
-# rules-final.md section 3: on a match (by goodreads_book_id), every other
+# rules.md section 3: on a match (by goodreads_book_id), every other
 # field is one of two camps.
 #
 # Volatile metadata -- always updated, no review needed.
@@ -74,7 +73,7 @@ def isbn10_check(s):
 def isbn10_check_digit(nine_digits):
     """The one ISBN-10 check character that makes `nine_digits` + it pass
     isbn10_check -- used by the stripped-978 repair and the isbn13 -> isbn10
-    reverse derivation (rules-final.md section 1)."""
+    reverse derivation (rules.md section 1)."""
     total = sum((10 - i) * int(c) for i, c in enumerate(nine_digits))
     check = (11 - (total % 11)) % 11
     return "X" if check == 10 else str(check)
@@ -91,7 +90,7 @@ def isbn13_checksum_ok(s):
 
 def isbn13_check(s):
     """Full ISBN-13 validity: Mod-10 checksum AND a 978/979 prefix
-    (rules-final.md section 1, the prefix check --
+    (rules.md section 1, the prefix check --
     a 977-prefixed value is an ISSN-style code, not an ISBN, whatever its
     checksum says)."""
     return isbn13_checksum_ok(s) and s[:3] in ("978", "979")
@@ -136,7 +135,7 @@ def looks_like_float_artifact(raw):
 
 
 # --------------------------------------------------------------------------
-# Field-level repair / warning logic -- this is rules-final.md section 1,
+# Field-level repair / warning logic -- this is rules.md section 1,
 # and nothing else. Every branch below maps to one row of that table.
 # --------------------------------------------------------------------------
 
@@ -589,7 +588,7 @@ def run(csv_path, db_path, log_path):
         conn.commit()
 
     except Exception as e:
-        # rules-final.md section 4: FAILED is a status label,
+        # rules.md section 4: FAILED is a status label,
         # not a rollback guarantee -- whatever was already committed stays.
         status = "FAILED"
         fatal_error = str(e)
@@ -634,7 +633,7 @@ def run(csv_path, db_path, log_path):
     if status == "FAILED":
         note = ("no rows were written" if rows_read == 0
                  else "rows loaded before the failure may already be saved -- "
-                      "no atomicity guarantee was implemented (rules-final.md section 4)")
+                      "no atomicity guarantee was implemented (rules.md section 4)")
         print(f"FAILED: {fatal_error} ({note})")
 
 
